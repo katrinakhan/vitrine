@@ -1,5 +1,6 @@
 const API = "https://api.artic.edu/api/v1";
-const FIELDS = [
+// Keep list payloads small (skip long descriptions until a detail view opens).
+const LIST_FIELDS = [
   "id",
   "title",
   "image_id",
@@ -7,9 +8,9 @@ const FIELDS = [
   "date_display",
   "medium_display",
   "place_of_origin",
-  "description",
   "thumbnail",
 ].join(",");
+const DETAIL_FIELDS = `${LIST_FIELDS},description`;
 
 const heroMedia = document.getElementById("hero-media");
 const heroTitle = document.getElementById("hero-title");
@@ -54,7 +55,7 @@ async function fetchJson(url) {
 }
 
 function setHero(artwork) {
-  const url = imageUrl(artwork.image_id, 1686);
+  const url = imageUrl(artwork.image_id, 843);
   if (url) {
     heroMedia.classList.remove("is-ready");
     // Force reflow so the reveal animation can replay.
@@ -71,8 +72,8 @@ async function loadFeatured() {
   const page = Math.floor(Math.random() * 50) + 1;
   const params = new URLSearchParams({
     page: String(page),
-    limit: "24",
-    fields: FIELDS,
+    limit: "8",
+    fields: LIST_FIELDS,
   });
   const data = await fetchJson(`${API}/artworks?${params.toString()}`);
 
@@ -112,7 +113,7 @@ function renderResults(artworks, query) {
     frame.className = "card-frame";
 
     const img = document.createElement("img");
-    const src = imageUrl(artwork.image_id, 600);
+    const src = imageUrl(artwork.image_id, 400);
     img.src = src || artwork.thumbnail?.lqip || "";
     img.alt = artwork.title || "Artwork";
     img.loading = "lazy";
@@ -136,8 +137,8 @@ function renderResults(artworks, query) {
   resultsEl.appendChild(fragment);
 }
 
-function openDetail(artwork) {
-  const url = imageUrl(artwork.image_id, 1200);
+async function openDetail(artwork) {
+  const url = imageUrl(artwork.image_id, 843);
   detailImage.src = url || "";
   detailImage.alt = artwork.title || "Artwork";
   detailTitle.textContent = artwork.title || "Untitled";
@@ -147,12 +148,26 @@ function openDetail(artwork) {
     .join(" · ");
   detailMeta.textContent = meta;
   detailMedium.textContent = artwork.medium_display || "";
-  detailDesc.textContent =
-    stripHtml(artwork.description) ||
-    "No written description is available for this work in the API.";
+  detailDesc.textContent = "Loading description…";
 
   if (typeof detailDialog.showModal === "function") {
     detailDialog.showModal();
+  }
+
+  try {
+    const data = await fetchJson(
+      `${API}/artworks/${artwork.id}?fields=${DETAIL_FIELDS}`
+    );
+    const full = data.data || artwork;
+    detailDesc.textContent =
+      stripHtml(full.description) ||
+      "No written description is available for this work in the API.";
+    if (full.medium_display) detailMedium.textContent = full.medium_display;
+  } catch (error) {
+    console.error(error);
+    detailDesc.textContent =
+      stripHtml(artwork.description) ||
+      "No written description is available for this work in the API.";
   }
 }
 
@@ -166,7 +181,7 @@ async function searchArtworks(query) {
   try {
     const params = new URLSearchParams({
       q,
-      fields: FIELDS,
+      fields: LIST_FIELDS,
       limit: "12",
     });
     // Prefer works that can be shown with images.
@@ -219,8 +234,8 @@ detailDialog.addEventListener("click", (event) => {
 
 (async function init() {
   try {
-    await loadFeatured();
-    await searchArtworks("painting");
+    // Load hero and search results in parallel for a faster first paint.
+    await Promise.all([loadFeatured(), searchArtworks("painting")]);
   } catch (error) {
     console.error(error);
     heroTitle.textContent = "Vitrine";

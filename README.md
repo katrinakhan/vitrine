@@ -1,6 +1,9 @@
 # Vitrine
 
-A small frontend project that explores the [Art Institute of Chicago](https://api.artic.edu/docs/) public REST API.
+**Live website (open this to view the project):**  
+**https://katrinakhan.github.io/vitrine/**
+
+A frontend project that explores the [Art Institute of Chicago](https://api.artic.edu/docs/) public REST API.
 
 ## Features
 
@@ -9,13 +12,12 @@ A small frontend project that explores the [Art Institute of Chicago](https://ap
 - Artwork detail dialog with title, artist, medium, and description
 - No API key required (public CORS-enabled API)
 
-## Run locally
+## Links
 
-```bash
-python -m http.server 5500
-```
-
-Then open [http://localhost:5500](http://localhost:5500).
+| | |
+|---|---|
+| **View the site** | https://katrinakhan.github.io/vitrine/ |
+| Source code | https://github.com/katrinakhan/vitrine |
 
 ## Tech
 
