@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vitrine — Art Institute of Chicago</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=Manrope:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#">Vitrine</a>
+      <p class="header-note">Art Institute of Chicago · public API</p>
+    </header>
+
+    <section class="hero" id="hero" aria-label="Featured artwork">
+      <div class="hero-media" id="hero-media" aria-hidden="true"></div>
+      <div class="hero-veil"></div>
+      <div class="hero-content">
+        <p class="brand-mark">Vitrine</p>
+        <h1 class="hero-title" id="hero-title">Loading the collection…</h1>
+        <p class="hero-sub" id="hero-sub">
+          A quiet window onto thousands of public-domain works.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#explore">Explore the collection</a>
+          <button type="button" class="btn btn-ghost" id="refresh-hero">
+            Another piece
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="explore" id="explore">
+      <div class="section-intro">
+        <h2>Explore</h2>
+        <p>Search by artist, title, place, or medium. Results come straight from the museum’s REST API.</p>
+      </div>
+
+      <form class="search-form" id="search-form" role="search">
+        <label class="sr-only" for="search-input">Search artworks</label>
+        <input
+          id="search-input"
+          name="q"
+          type="search"
+          placeholder="Try Monet, Japanese prints, Chicago…"
+          autocomplete="off"
+          required
+        />
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+
+      <div class="quick-tags" aria-label="Suggested searches">
+        <button type="button" data-query="impressionism">Impressionism</button>
+        <button type="button" data-query="japanese woodblock">Japanese woodblock</button>
+        <button type="button" data-query="sculpture">Sculpture</button>
+        <button type="button" data-query="van gogh">Van Gogh</button>
+      </div>
+
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+      <div class="grid" id="results"></div>
+    </section>
+
+    <dialog class="detail" id="detail" aria-labelledby="detail-title">
+      <form method="dialog" class="detail-close-row">
+        <button value="close" class="btn btn-ghost" aria-label="Close">Close</button>
+      </form>
+      <div class="detail-body">
+        <img id="detail-image" alt="" />
+        <div class="detail-copy">
+          <h2 id="detail-title"></h2>
+          <p class="detail-meta" id="detail-meta"></p>
+          <p class="detail-medium" id="detail-medium"></p>
+          <p class="detail-desc" id="detail-desc"></p>
+        </div>
+      </div>
+    </dialog>
+
+    <footer class="site-footer">
+      <p>
+        Data &amp; images via the
+        <a href="https://api.artic.edu/docs/" target="_blank" rel="noopener noreferrer"
+          >Art Institute of Chicago API</a
+        >.
+      </p>
+    </footer>
+
+    <script src="js/app.js"></script>
+  </body>
+</html>

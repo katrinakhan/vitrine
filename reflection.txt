@@ -1,0 +1,52 @@
+Project Reflection — Vitrine (Art Institute of Chicago API)
+==========================================================
+
+How I approached the project
+----------------------------
+I started by choosing a public API that felt personal and visual: the Art Institute
+of Chicago API from the suggested “Art Data” idea. It needs no API key, supports
+CORS, and returns real artwork images plus metadata, which made it a good fit for
+a website rather than a terminal script.
+
+Next I sketched a simple user flow: land on one striking featured work, then search
+and open details. I checked the API docs for the search endpoint, the fields
+parameter, public-domain filtering, and how IIIF image URLs are built. After that I
+built the site in layers — HTML structure, styling/brand (“Vitrine”), then JavaScript
+fetch calls to load the hero piece and search results.
+
+What was hard
+-------------
+Connecting search results to reliable images was the trickiest part. Not every
+artwork record has an image_id, and some fields (like description) come back as HTML,
+so I had to filter and clean the data before showing it. Understanding which query
+parameters the search endpoint actually accepts — and reading enough of the docs to
+request only the fields I needed — also took more time than writing the page layout.
+
+What was easy
+-------------
+Making GET requests with fetch and reading JSON felt straightforward after earlier
+API practice (weather, ISS, Bitcoin). Displaying titles, artists, and dates in the UI
+was simple once a successful response arrived. Having free CORS-enabled endpoints
+meant I did not need a backend proxy for this project.
+
+How I might improve for the next project
+----------------------------------------
+- Read the docs and try a few sample requests in the browser or with curl before
+  designing the UI, so I know the data shape early.
+- Plan loading, empty, and error states from the start instead of adding them later.
+- Add pagination or infinite scroll so users can go beyond the first page of results.
+- Write a tiny checklist of edge cases (missing images, rate limits, slow networks).
+
+Biggest learning from today
+---------------------------
+A REST API is only half the product. The valuable skill is turning raw JSON into a
+clear experience: deciding what to show, what to hide, and how to recover when the
+data is incomplete. Filtering public-domain works with images mattered as much as
+getting a 200 response.
+
+What I would do differently next time
+-------------------------------------
+I would prototype the API calls first in a small script, confirm image URLs and
+useful fields, then design the interface around what the API can actually deliver.
+I would also keep the first version smaller — hero + one search — and only add the
+detail dialog and quick-tag shortcuts once the core request/response loop was solid.
