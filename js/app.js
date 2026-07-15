@@ -1,16 +1,4 @@
-const API = "https://api.artic.edu/api/v1";
-// Keep list payloads small (skip long descriptions until a detail view opens).
-const LIST_FIELDS = [
-  "id",
-  "title",
-  "image_id",
-  "artist_display",
-  "date_display",
-  "medium_display",
-  "place_of_origin",
-  "thumbnail",
-].join(",");
-const DETAIL_FIELDS = `${LIST_FIELDS},description`;
+const API = "https://collectionapi.metmuseum.org/public/collection/v1";
 
 const heroMedia = document.getElementById("hero-media");
 const heroTitle = document.getElementById("hero-title");
@@ -27,24 +15,14 @@ const detailMeta = document.getElementById("detail-meta");
 const detailMedium = document.getElementById("detail-medium");
 const detailDesc = document.getElementById("detail-desc");
 
-let iiifUrl = "https://www.artic.edu/iiif/2";
-
-function imageUrl(imageId, width = 843) {
-  if (!imageId) return null;
-  return `${iiifUrl}/${imageId}/full/${width},/0/default.jpg`;
-}
-
-function stripHtml(html) {
-  if (!html) return "";
-  const tmp = document.createElement("div");
-  tmp.innerHTML = html;
-  return tmp.textContent || tmp.innerText || "";
-}
-
-function artistLine(artwork) {
-  if (!artwork.artist_display) return "Artist unknown";
-  return artwork.artist_display.split("\n")[0];
-}
+// Featured searches rotate so the hero feels fresh without huge payloads.
+const FEATURED_QUERIES = [
+  "paintings",
+  "landscape",
+  "portrait",
+  "still life",
+  "impressionist",
+];
 
 async function fetchJson(url) {
   const response = await fetch(url);
@@ -54,39 +32,87 @@ async function fetchJson(url) {
   return response.json();
 }
 
+function pickImage(artwork, preferLarge = false) {
+  if (preferLarge) {
+    return artwork.primaryImage || artwork.primaryImageSmall || "";
+  }
+  return artwork.primaryImageSmall || artwork.primaryImage || "";
+}
+
+function normalizeArtwork(raw) {
+  if (!raw || (!raw.primaryImageSmall && !raw.primaryImage)) return null;
+  return {
+    id: raw.objectID,
+    title: raw.title || "Untitled",
+    artist: raw.artistDisplayName || "Artist unknown",
+    date: raw.objectDate || "",
+    medium: raw.medium || "",
+    place: raw.country || raw.culture || "",
+    department: raw.department || "",
+    description: [raw.creditLine, raw.repository].filter(Boolean).join(" · "),
+    primaryImage: raw.primaryImage || "",
+    primaryImageSmall: raw.primaryImageSmall || "",
+  };
+}
+
+async function fetchArtwork(id) {
+  const raw = await fetchJson(`${API}/objects/${id}`);
+  return normalizeArtwork(raw);
+}
+
+async function fetchArtworksByIds(ids, limit = 12) {
+  const slice = ids.slice(0, limit);
+  const results = await Promise.all(
+    slice.map(async (id) => {
+      try {
+        return await fetchArtwork(id);
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    })
+  );
+  return results.filter(Boolean);
+}
+
+async function searchObjectIds(query) {
+  const params = new URLSearchParams({
+    q: query,
+    hasImages: "true",
+  });
+  const data = await fetchJson(`${API}/search?${params.toString()}`);
+  return data.objectIDs || [];
+}
+
 function setHero(artwork) {
-  const url = imageUrl(artwork.image_id, 843);
+  const url = pickImage(artwork, true);
   if (url) {
     heroMedia.classList.remove("is-ready");
-    // Force reflow so the reveal animation can replay.
     void heroMedia.offsetWidth;
     heroMedia.style.backgroundImage = `url("${url}")`;
     heroMedia.classList.add("is-ready");
   }
-  heroTitle.textContent = artwork.title || "Untitled";
-  const bits = [artistLine(artwork), artwork.date_display].filter(Boolean);
+  heroTitle.textContent = artwork.title;
+  const bits = [artwork.artist, artwork.date].filter(Boolean);
   heroSub.textContent = bits.join(" · ");
 }
 
 async function loadFeatured() {
-  const page = Math.floor(Math.random() * 50) + 1;
-  const params = new URLSearchParams({
-    page: String(page),
-    limit: "8",
-    fields: LIST_FIELDS,
-  });
-  const data = await fetchJson(`${API}/artworks?${params.toString()}`);
-
-  if (data.config?.iiif_url) {
-    iiifUrl = data.config.iiif_url;
-  }
-
-  const withImages = (data.data || []).filter((item) => item.image_id);
-  if (!withImages.length) {
+  const query =
+    FEATURED_QUERIES[Math.floor(Math.random() * FEATURED_QUERIES.length)];
+  const ids = await searchObjectIds(query);
+  if (!ids.length) {
     throw new Error("No featured artworks found");
   }
 
-  const pick = withImages[Math.floor(Math.random() * withImages.length)];
+  // Sample from deeper in the list so refreshes feel varied.
+  const start = Math.floor(Math.random() * Math.min(40, Math.max(ids.length - 6, 1)));
+  const artworks = await fetchArtworksByIds(ids.slice(start, start + 6), 6);
+  if (!artworks.length) {
+    throw new Error("No featured artworks with images");
+  }
+
+  const pick = artworks[Math.floor(Math.random() * artworks.length)];
   setHero(pick);
   return pick;
 }
@@ -107,26 +133,27 @@ function renderResults(artworks, query) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "card";
-    button.setAttribute("aria-label", `Open details for ${artwork.title || "artwork"}`);
+    button.setAttribute("aria-label", `Open details for ${artwork.title}`);
 
     const frame = document.createElement("div");
     frame.className = "card-frame";
 
     const img = document.createElement("img");
-    const src = imageUrl(artwork.image_id, 400);
-    img.src = src || artwork.thumbnail?.lqip || "";
-    img.alt = artwork.title || "Artwork";
+    img.src = pickImage(artwork, false);
+    img.alt = artwork.title;
     img.loading = "lazy";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
     frame.appendChild(img);
 
     const copy = document.createElement("div");
     const title = document.createElement("h3");
     title.className = "card-title";
-    title.textContent = artwork.title || "Untitled";
+    title.textContent = artwork.title;
 
     const artist = document.createElement("p");
     artist.className = "card-artist";
-    artist.textContent = artistLine(artwork);
+    artist.textContent = artwork.artist;
 
     copy.append(title, artist);
     button.append(frame, copy);
@@ -137,37 +164,23 @@ function renderResults(artworks, query) {
   resultsEl.appendChild(fragment);
 }
 
-async function openDetail(artwork) {
-  const url = imageUrl(artwork.image_id, 843);
-  detailImage.src = url || "";
-  detailImage.alt = artwork.title || "Artwork";
-  detailTitle.textContent = artwork.title || "Untitled";
+function openDetail(artwork) {
+  detailImage.referrerPolicy = "no-referrer";
+  detailImage.src = pickImage(artwork, true);
+  detailImage.alt = artwork.title;
+  detailTitle.textContent = artwork.title;
 
-  const meta = [artistLine(artwork), artwork.date_display, artwork.place_of_origin]
+  const meta = [artwork.artist, artwork.date, artwork.place]
     .filter(Boolean)
     .join(" · ");
   detailMeta.textContent = meta;
-  detailMedium.textContent = artwork.medium_display || "";
-  detailDesc.textContent = "Loading description…";
+  detailMedium.textContent = artwork.medium || artwork.department || "";
+  detailDesc.textContent =
+    artwork.description ||
+    "No written description is available for this work in the API.";
 
   if (typeof detailDialog.showModal === "function") {
     detailDialog.showModal();
-  }
-
-  try {
-    const data = await fetchJson(
-      `${API}/artworks/${artwork.id}?fields=${DETAIL_FIELDS}`
-    );
-    const full = data.data || artwork;
-    detailDesc.textContent =
-      stripHtml(full.description) ||
-      "No written description is available for this work in the API.";
-    if (full.medium_display) detailMedium.textContent = full.medium_display;
-  } catch (error) {
-    console.error(error);
-    detailDesc.textContent =
-      stripHtml(artwork.description) ||
-      "No written description is available for this work in the API.";
   }
 }
 
@@ -179,20 +192,8 @@ async function searchArtworks(query) {
   resultsEl.innerHTML = "";
 
   try {
-    const params = new URLSearchParams({
-      q,
-      fields: LIST_FIELDS,
-      limit: "12",
-    });
-    // Prefer works that can be shown with images.
-    params.set("query[term][is_public_domain]", "true");
-
-    const data = await fetchJson(`${API}/artworks/search?${params.toString()}`);
-    if (data.config?.iiif_url) {
-      iiifUrl = data.config.iiif_url;
-    }
-
-    const artworks = (data.data || []).filter((item) => item.image_id);
+    const ids = await searchObjectIds(q);
+    const artworks = await fetchArtworksByIds(ids, 12);
     renderResults(artworks, q);
   } catch (error) {
     console.error(error);
@@ -234,7 +235,6 @@ detailDialog.addEventListener("click", (event) => {
 
 (async function init() {
   try {
-    // Load hero and search results in parallel for a faster first paint.
     await Promise.all([loadFeatured(), searchArtworks("painting")]);
   } catch (error) {
     console.error(error);

@@ -1,52 +1,43 @@
-Project Reflection — Vitrine (Art Institute of Chicago API)
-==========================================================
+Project Reflection — Vitrine (The Met Collection API)
+=====================================================
 
 How I approached the project
 ----------------------------
-I started by choosing a public API that felt personal and visual: the Art Institute
-of Chicago API from the suggested “Art Data” idea. It needs no API key, supports
-CORS, and returns real artwork images plus metadata, which made it a good fit for
-a website rather than a terminal script.
+I started by choosing a public “Art Data” API for a visual website. The first
+version used the Art Institute of Chicago API. Its JSON endpoints worked, but
+their image host later began blocking many requests with Cloudflare (403), so
+images failed while titles still loaded. I switched the live image source to the
+Metropolitan Museum of Art Collection API, which is also free, needs no API key,
+supports CORS, and serves images that load reliably in the browser.
 
-Next I sketched a simple user flow: land on one striking featured work, then search
-and open details. I checked the API docs for the search endpoint, the fields
-parameter, public-domain filtering, and how IIIF image URLs are built. After that I
-built the site in layers — HTML structure, styling/brand (“Vitrine”), then JavaScript
-fetch calls to load the hero piece and search results.
+The product flow stayed the same: land on one featured work, search the
+collection, and open details. I used GET requests with fetch, read JSON, and
+mapped fields like title, artist, and image URLs into the page.
 
 What was hard
 -------------
-Connecting search results to reliable images was the trickiest part. Not every
-artwork record has an image_id, and some fields (like description) come back as HTML,
-so I had to filter and clean the data before showing it. Understanding which query
-parameters the search endpoint actually accepts — and reading enough of the docs to
-request only the fields I needed — also took more time than writing the page layout.
+Learning that a public API can return good data while images still fail (because
+the image CDN is separate and protected). Also, The Met’s search endpoint returns
+object IDs only, so each result needs a second request to `/objects/{id}` — that
+meant limiting how many detail requests run at once so the page stays fast.
 
 What was easy
 -------------
-Making GET requests with fetch and reading JSON felt straightforward after earlier
-API practice (weather, ISS, Bitcoin). Displaying titles, artists, and dates in the UI
-was simple once a successful response arrived. Having free CORS-enabled endpoints
-meant I did not need a backend proxy for this project.
+Building the layout and wiring buttons/search once sample JSON responses were
+clear. Displaying titles and artists is straightforward after a successful fetch.
 
 How I might improve for the next project
 ----------------------------------------
-- Read the docs and try a few sample requests in the browser or with curl before
-  designing the UI, so I know the data shape early.
-- Plan loading, empty, and error states from the start instead of adding them later.
-- Add pagination or infinite scroll so users can go beyond the first page of results.
-- Write a tiny checklist of edge cases (missing images, rate limits, slow networks).
+- Test both data and image URLs from a real browser early, not only the JSON.
+- Plan loading and broken-image fallbacks before polishing the UI.
+- Cache recent object responses and add pagination.
 
 Biggest learning from today
 ---------------------------
-A REST API is only half the product. The valuable skill is turning raw JSON into a
-clear experience: deciding what to show, what to hide, and how to recover when the
-data is incomplete. Filtering public-domain works with images mattered as much as
-getting a 200 response.
+REST APIs are more than one URL. Metadata and media can live on different hosts,
+and both must work for the product to feel complete.
 
 What I would do differently next time
 -------------------------------------
-I would prototype the API calls first in a small script, confirm image URLs and
-useful fields, then design the interface around what the API can actually deliver.
-I would also keep the first version smaller — hero + one search — and only add the
-detail dialog and quick-tag shortcuts once the core request/response loop was solid.
+I would verify hotlinked images on the deployed site (GitHub Pages) immediately,
+and keep a backup public art API in mind if the first choice’s images are blocked.

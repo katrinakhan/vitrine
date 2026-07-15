@@ -3,14 +3,14 @@
 **Live website (open this to view the project):**  
 **https://katrinakhan.github.io/vitrine/**
 
-A frontend project that explores the [Art Institute of Chicago](https://api.artic.edu/docs/) public REST API.
+A frontend project that explores artworks from the [Metropolitan Museum of Art Collection API](https://metmuseum.github.io/).
 
 ## Features
 
-- Featured artwork hero loaded from the `/artworks` endpoint
-- Search powered by `/artworks/search`
-- Artwork detail dialog with title, artist, medium, and description
-- No API key required (public CORS-enabled API)
+- Featured artwork hero loaded from Met search + object endpoints
+- Search powered by `/search` and `/objects/{id}`
+- Artwork detail dialog with title, artist, medium, and credit line
+- No API key required (public CORS-enabled API with working image URLs)
 
 ## Links
 
@@ -23,7 +23,7 @@ A frontend project that explores the [Art Institute of Chicago](https://api.arti
 
 - HTML, CSS, vanilla JavaScript
 - `fetch` for HTTP GET requests
-- Art Institute of Chicago API + IIIF images
+- The Met Collection API (`primaryImage` / `primaryImageSmall`)
 
 ## Project notes
 
